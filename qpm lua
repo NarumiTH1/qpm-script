@@ -1,0 +1,618 @@
+-- Roblox UI & Optimization Script (Beta Version - Remote Loop Executor)
+
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local Lighting = game:GetService("Lighting")
+local CoreGui = game:GetService("CoreGui")
+
+local localPlayer = Players.LocalPlayer
+
+-- Prevent duplicate UI execution
+if CoreGui:FindFirstChild("CustomBetaMenuGui") then
+    CoreGui:FindFirstChild("CustomBetaMenuGui"):Destroy()
+end
+
+----------------------------------------------------
+-- [ KEY SYSTEM CONFIGURATION ]
+----------------------------------------------------
+local singleUseKey = "qpm"
+local reusableKey = "Rc7isdie"
+local isSingleKeyUsed = false
+
+-- Create Main ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "CustomBetaMenuGui"
+screenGui.ResetOnSpawn = false
+
+local parentTarget = localPlayer:FindFirstChild("PlayerGui") or CoreGui
+screenGui.Parent = parentTarget
+
+----------------------------------------------------
+-- [ KEY SYSTEM UI ]
+----------------------------------------------------
+local keyFrame = Instance.new("Frame")
+keyFrame.Name = "KeyFrame"
+keyFrame.Size = UDim2.new(0, 300, 0, 180)
+keyFrame.Position = UDim2.new(0.5, -150, 0.5, -90)
+keyFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
+keyFrame.BorderSizePixel = 0
+keyFrame.Active = true
+keyFrame.Draggable = true
+keyFrame.ZIndex = 20
+keyFrame.Parent = screenGui
+
+local keyCorner = Instance.new("UICorner")
+keyCorner.CornerRadius = UDim.new(0, 10)
+keyCorner.Parent = keyFrame
+
+local keyTitle = Instance.new("TextLabel")
+keyTitle.Name = "KeyTitle"
+keyTitle.Size = UDim2.new(1, 0, 0, 35)
+keyTitle.Position = UDim2.new(0, 0, 0, 5)
+keyTitle.BackgroundTransparency = 1
+keyTitle.Text = "Beta Access Key Required"
+keyTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyTitle.TextSize = 16
+keyTitle.Font = Enum.Font.SourceSansBold
+keyTitle.ZIndex = 20
+keyTitle.Parent = keyFrame
+
+local keyTextBox = Instance.new("TextBox")
+keyTextBox.Name = "KeyTextBox"
+keyTextBox.Size = UDim2.new(1, -40, 0, 38)
+keyTextBox.Position = UDim2.new(0, 20, 0, 50)
+keyTextBox.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+keyTextBox.Text = ""
+keyTextBox.PlaceholderText = "Enter Key Here..."
+keyTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+keyTextBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+keyTextBox.TextSize = 14
+keyTextBox.Font = Enum.Font.SourceSans
+keyTextBox.ZIndex = 20
+keyTextBox.Parent = keyFrame
+
+local keyBoxCorner = Instance.new("UICorner")
+keyBoxCorner.CornerRadius = UDim.new(0, 6)
+keyBoxCorner.Parent = keyTextBox
+
+local submitKeyBtn = Instance.new("TextButton")
+submitKeyBtn.Name = "SubmitKeyButton"
+submitKeyBtn.Size = UDim2.new(1, -40, 0, 38)
+submitKeyBtn.Position = UDim2.new(0, 20, 0, 105)
+submitKeyBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+submitKeyBtn.Text = "Verify Key"
+submitKeyBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+submitKeyBtn.TextSize = 14
+submitKeyBtn.Font = Enum.Font.SourceSansBold
+submitKeyBtn.ZIndex = 20
+submitKeyBtn.Parent = keyFrame
+
+local submitCorner = Instance.new("UICorner")
+submitCorner.CornerRadius = UDim.new(0, 6)
+submitCorner.Parent = submitKeyBtn
+
+----------------------------------------------------
+-- [ MAIN MENU FRAME (BETA) ]
+----------------------------------------------------
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 320, 0, 450)
+mainFrame.Position = UDim2.new(0.5, -160, 0.5, -225)
+mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.Visible = false
+mainFrame.Parent = screenGui
+
+local frameCorner = Instance.new("UICorner")
+frameCorner.CornerRadius = UDim.new(0, 10)
+frameCorner.Parent = mainFrame
+
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Name = "TitleLabel"
+titleLabel.Size = UDim2.new(1, -40, 0, 35)
+titleLabel.Position = UDim2.new(0, 12, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Developer Menu (BETA)"
+titleLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.TextSize = 16
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.Parent = mainFrame
+
+local closeButton = Instance.new("TextButton")
+closeButton.Name = "CloseButton"
+closeButton.Size = UDim2.new(0, 26, 0, 26)
+closeButton.Position = UDim2.new(1, -32, 0, 6)
+closeButton.BackgroundColor3 = Color3.fromRGB(220, 60, 60)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeButton.TextSize = 14
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.Parent = mainFrame
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = closeButton
+
+-- Helper Function เธชเธฃเนเธฒเธเธเธธเนเธก
+local function createMenuButton(name, text, positionY, color)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.Size = UDim2.new(1, -40, 0, 42)
+    button.Position = UDim2.new(0, 20, 0, positionY)
+    button.BackgroundColor3 = color
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 14
+    button.Font = Enum.Font.SourceSansBold
+    button.Parent = mainFrame
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = button
+
+    return button
+end
+
+-- Existing Buttons
+local removeTextureButton = createMenuButton("RemoveTextureButton", "Remove All Textures", 45, Color3.fromRGB(60, 120, 220))
+local autoEffectButton = createMenuButton("AutoEffectButton", "Auto Remove Effects: [ OFF ]", 97, Color3.fromRGB(180, 50, 50))
+local espButton = createMenuButton("ESPButton", "Blue Highlight & Name ESP: [ OFF ]", 149, Color3.fromRGB(180, 50, 50))
+local clearFogButton = createMenuButton("ClearFogButton", "Clear Fog & Atmosphere", 201, Color3.fromRGB(140, 80, 200))
+
+----------------------------------------------------
+-- [ REMOTE EXECUTOR SECTION ]
+----------------------------------------------------
+local remoteNameBox = Instance.new("TextBox")
+remoteNameBox.Name = "RemoteNameBox"
+remoteNameBox.Size = UDim2.new(1, -40, 0, 36)
+remoteNameBox.Position = UDim2.new(0, 20, 0, 253)
+remoteNameBox.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+remoteNameBox.Text = ""
+remoteNameBox.PlaceholderText = "Remote Name or Path..."
+remoteNameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+remoteNameBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+remoteNameBox.TextSize = 13
+remoteNameBox.Font = Enum.Font.SourceSans
+remoteNameBox.Parent = mainFrame
+
+local remoteNameCorner = Instance.new("UICorner")
+remoteNameCorner.CornerRadius = UDim.new(0, 6)
+remoteNameCorner.Parent = remoteNameBox
+
+local remoteArgsBox = Instance.new("TextBox")
+remoteArgsBox.Name = "RemoteArgsBox"
+remoteArgsBox.Size = UDim2.new(1, -40, 0, 36)
+remoteArgsBox.Position = UDim2.new(0, 20, 0, 297)
+remoteArgsBox.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+remoteArgsBox.Text = ""
+remoteArgsBox.PlaceholderText = "Args (e.g. true, 100, \"item\") [Optional]"
+remoteArgsBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+remoteArgsBox.PlaceholderColor3 = Color3.fromRGB(150, 150, 150)
+remoteArgsBox.TextSize = 13
+remoteArgsBox.Font = Enum.Font.SourceSans
+remoteArgsBox.Parent = mainFrame
+
+local remoteArgsCorner = Instance.new("UICorner")
+remoteArgsCorner.CornerRadius = UDim.new(0, 6)
+remoteArgsCorner.Parent = remoteArgsBox
+
+local remoteLoopButton = createMenuButton("RemoteLoopButton", "Loop Remote: [ OFF ]", 341, Color3.fromRGB(180, 50, 50))
+
+-- Floating Open Button
+local openButton = Instance.new("TextButton")
+openButton.Name = "OpenMenuButton"
+openButton.Size = UDim2.new(0, 110, 0, 35)
+openButton.Position = UDim2.new(0, 15, 0.5, -17)
+openButton.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+openButton.Text = "Open Menu (Beta)"
+openButton.TextColor3 = Color3.fromRGB(255, 215, 0)
+openButton.TextSize = 13
+openButton.Font = Enum.Font.SourceSansBold
+openButton.Visible = false
+openButton.Parent = screenGui
+
+local openCorner = Instance.new("UICorner")
+openCorner.CornerRadius = UDim.new(0, 8)
+openCorner.Parent = openButton
+
+----------------------------------------------------
+-- [ LOGIC & FUNCTIONS ]
+----------------------------------------------------
+
+local autoRemoveEffects = false
+local autoRemoveConnection = nil
+local espEnabled = false
+local espConnections = {}
+local remoteLoopEnabled = false
+
+local function isCharacter(object)
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player.Character and object:IsDescendantOf(player.Character) then
+            return true
+        end
+    end
+    return false
+end
+
+local function isEffectObject(obj)
+    return obj:IsA("ParticleEmitter") 
+        or obj:IsA("Trail") 
+        or obj:IsA("Smoke") 
+        or obj:IsA("Fire") 
+        or obj:IsA("Sparkles") 
+        or obj:IsA("Beam") 
+        or obj:IsA("Highlight") 
+        or obj:IsA("Light")
+end
+
+local function handleNewObject(obj)
+    if not autoRemoveEffects then return end
+    if isEffectObject(obj) and not isCharacter(obj) then
+        task.defer(function()
+            if obj and obj.Parent and not isCharacter(obj) then
+                obj:Destroy()
+            end
+        end)
+    end
+end
+
+local function removeWorldTextures()
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if not isCharacter(obj) then
+            if obj:IsA("Texture") or obj:IsA("Decal") then
+                obj:Destroy()
+            elseif obj:IsA("BasePart") then
+                obj.Material = Enum.Material.SmoothPlastic
+            elseif obj:IsA("SpecialMesh") then
+                obj.TextureId = ""
+            end
+        end
+    end
+end
+
+local function toggleAutoRemoveEffects()
+    autoRemoveEffects = not autoRemoveEffects
+    if autoRemoveEffects then
+        autoEffectButton.Text = "Auto Remove Effects: [ ON ]"
+        autoEffectButton.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if isEffectObject(obj) and not isCharacter(obj) then
+                obj:Destroy()
+            end
+        end
+        autoRemoveConnection = workspace.DescendantAdded:Connect(handleNewObject)
+    else
+        autoEffectButton.Text = "Auto Remove Effects: [ OFF ]"
+        autoEffectButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        if autoRemoveConnection then
+            autoRemoveConnection:Disconnect()
+            autoRemoveConnection = nil
+        end
+    end
+end
+
+local function applyHighlightAndName(player)
+    if not player or player == localPlayer then return end
+    local char = player.Character
+    if not char then return end
+
+    local head = char:WaitForChild("Head", 5)
+    if not head then return end
+
+    if not char:FindFirstChild("PlayerBlueHighlightESP") then
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "PlayerBlueHighlightESP"
+        highlight.FillColor = Color3.fromRGB(0, 170, 255)
+        highlight.FillTransparency = 0.4
+        highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
+        highlight.OutlineTransparency = 0
+        highlight.Adornee = char
+        highlight.Parent = char
+    end
+
+    if not head:FindFirstChild("PlayerNameTagESP") then
+        local billboard = Instance.new("BillboardGui")
+        billboard.Name = "PlayerNameTagESP"
+        billboard.Adornee = head
+        billboard.Size = UDim2.new(0, 150, 0, 30)
+        billboard.StudsOffset = Vector3.new(0, 2.5, 0)
+        billboard.AlwaysOnTop = true
+        billboard.Parent = head
+
+        local nameLabel = Instance.new("TextLabel")
+        nameLabel.Size = UDim2.new(1, 0, 1, 0)
+        nameLabel.BackgroundTransparency = 1
+        nameLabel.Text = player.DisplayName .. " (@" .. player.Name .. ")"
+        nameLabel.TextColor3 = Color3.fromRGB(0, 220, 255)
+        nameLabel.TextStrokeTransparency = 0.2
+        nameLabel.TextStrokeColor3 = Color3.fromRGB(0, 0, 0)
+        nameLabel.TextSize = 13
+        nameLabel.Font = Enum.Font.SourceSansBold
+        nameLabel.Parent = billboard
+    end
+end
+
+local function removeHighlightAndName(player)
+    if not player then return end
+    local char = player.Character
+    if not char then return end
+
+    local hl = char:FindFirstChild("PlayerBlueHighlightESP")
+    if hl then hl:Destroy() end
+
+    local head = char:FindFirstChild("Head")
+    if head then
+        local tag = head:FindFirstChild("PlayerNameTagESP")
+        if tag then tag:Destroy() end
+    end
+end
+
+local function setupPlayerESP(player)
+    if player == localPlayer then return end
+    if player.Character then
+        applyHighlightAndName(player)
+    end
+    local charConn = player.CharacterAdded:Connect(function(char)
+        if espEnabled then
+            char:WaitForChild("HumanoidRootPart", 5)
+            applyHighlightAndName(player)
+        end
+    end)
+    table.insert(espConnections, charConn)
+end
+
+local function togglePlayerESP()
+    espEnabled = not espEnabled
+    if espEnabled then
+        espButton.Text = "Blue Highlight & Name ESP: [ ON ]"
+        espButton.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+        for _, player in ipairs(Players:GetPlayers()) do
+            setupPlayerESP(player)
+        end
+        local playerAddedConn = Players.PlayerAdded:Connect(function(player)
+            setupPlayerESP(player)
+        end)
+        table.insert(espConnections, playerAddedConn)
+    else
+        espButton.Text = "Blue Highlight & Name ESP: [ OFF ]"
+        espButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+        for _, conn in ipairs(espConnections) do
+            conn:Disconnect()
+        end
+        espConnections = {}
+        for _, player in ipairs(Players:GetPlayers()) do
+            removeHighlightAndName(player)
+        end
+    end
+end
+
+local function clearFogAndAtmosphere()
+    for _, v in ipairs(Lighting:GetChildren()) do
+        if v:IsA("PostEffect") or v:IsA("Atmosphere") or v:IsA("Clouds") then
+            v:Destroy()
+        end
+    end
+    Lighting.FogEnd = 100000
+    Lighting.GlobalShadows = false
+end
+
+----------------------------------------------------
+-- [ REMOTE LOOP LOGIC ]
+----------------------------------------------------
+local function findRemote(targetStr)
+    if targetStr == "" then return nil end
+    
+    -- เธฅเธญเธเธซเธฒเนเธ ReplicatedStorage / Workspace เธเนเธญเธเธ”เนเธงเธขเธเธทเนเธญ
+    for _, obj in ipairs(game:GetDescendants()) do
+        if (obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction")) and obj.Name == targetStr then
+            return obj
+        end
+    end
+    
+    -- เธฅเธญเธเธญเนเธฒเธเนเธเธ Path (เธเธฃเธ“เธตเนเธชเนเน€เธเนเธ game.ReplicatedStorage...)
+    local success, result = pcall(function()
+        local pathParts = string.split(targetStr, ".")
+        local current = game
+        for _, part in ipairs(pathParts) do
+            if part ~= "game" and current then
+                current = current:FindFirstChild(part)
+            end
+        end
+        return current
+    end)
+    
+    if success and result and (result:IsA("RemoteEvent") or result:IsA("RemoteFunction")) then
+        return result
+    end
+    
+    return nil
+end
+
+local function parseArgs(argsStr)
+    if argsStr == "" then return {} end
+    local success, result = pcall(function()
+        return loadstring("return {" .. argsStr .. "}")()
+    end)
+    if success and type(result) == "table" then
+        return result
+    end
+    return {argsStr}
+end
+
+local function toggleRemoteLoop()
+    remoteLoopEnabled = not remoteLoopEnabled
+    
+    if remoteLoopEnabled then
+        local remoteInput = remoteNameBox.Text
+        local targetRemote = findRemote(remoteInput)
+        
+        if not targetRemote then
+            remoteLoopEnabled = false
+            remoteLoopButton.Text = "Remote Not Found!"
+            remoteLoopButton.BackgroundColor3 = Color3.fromRGB(220, 100, 0)
+            task.delay(2, function()
+                if not remoteLoopEnabled then
+                    remoteLoopButton.Text = "Loop Remote: [ OFF ]"
+                    remoteLoopButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+                end
+            end)
+            return
+        end
+        
+        remoteLoopButton.Text = "Loop Remote: [ ON ]"
+        remoteLoopButton.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+        
+        task.spawn(function()
+            while remoteLoopEnabled do
+                local args = parseArgs(remoteArgsBox.Text)
+                pcall(function()
+                    if targetRemote:IsA("RemoteEvent") then
+                        targetRemote:FireServer(unpack(args))
+                    elseif targetRemote:IsA("RemoteFunction") then
+                        targetRemote:InvokeServer(unpack(args))
+                    end
+                end)
+                task.wait(0.1) -- เธฃเธฐเธขเธฐเน€เธงเธฅเธฒเธงเธ Loop เธฃเธฑเธ Remote (เธเธฃเธฑเธเนเธ”เน)
+            end
+        end)
+    else
+        remoteLoopButton.Text = "Loop Remote: [ OFF ]"
+        remoteLoopButton.BackgroundColor3 = Color3.fromRGB(180, 50, 50)
+    end
+end
+
+local function startMainUIProcess()
+    keyFrame:Destroy()
+    
+    -- Loading Screen Logic
+    local loadingFrame = Instance.new("Frame")
+    loadingFrame.Name = "LoadingFrame"
+    loadingFrame.Size = UDim2.new(1, 0, 1, 0)
+    loadingFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 25)
+    loadingFrame.ZIndex = 10
+    loadingFrame.Parent = screenGui
+
+    local loadingTitle = Instance.new("TextLabel")
+    loadingTitle.Size = UDim2.new(1, 0, 0, 40)
+    loadingTitle.Position = UDim2.new(0, 0, 0.4, -40)
+    loadingTitle.BackgroundTransparency = 1
+    loadingTitle.Text = "Loading Beta System..."
+    loadingTitle.TextColor3 = Color3.fromRGB(255, 215, 0)
+    loadingTitle.TextSize = 22
+    loadingTitle.Font = Enum.Font.SourceSansBold
+    loadingTitle.ZIndex = 10
+    loadingTitle.Parent = loadingFrame
+
+    local barBackground = Instance.new("Frame")
+    barBackground.Size = UDim2.new(0, 300, 0, 12)
+    barBackground.Position = UDim2.new(0.5, -150, 0.4, 20)
+    barBackground.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
+    barBackground.ZIndex = 10
+    barBackground.Parent = loadingFrame
+
+    local barBgCorner = Instance.new("UICorner")
+    barBgCorner.CornerRadius = UDim.new(0, 6)
+    barBgCorner.Parent = barBackground
+
+    local progressBar = Instance.new("Frame")
+    progressBar.Size = UDim2.new(0, 0, 1, 0)
+    progressBar.BackgroundColor3 = Color3.fromRGB(255, 215, 0)
+    progressBar.ZIndex = 10
+    progressBar.Parent = barBackground
+
+    local progressBarCorner = Instance.new("UICorner")
+    progressBarCorner.CornerRadius = UDim.new(0, 6)
+    progressBarCorner.Parent = progressBar
+
+    local percentLabel = Instance.new("TextLabel")
+    percentLabel.Size = UDim2.new(1, 0, 0, 25)
+    percentLabel.Position = UDim2.new(0, 0, 0.4, 40)
+    percentLabel.BackgroundTransparency = 1
+    percentLabel.Text = "0%"
+    percentLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
+    percentLabel.TextSize = 14
+    percentLabel.Font = Enum.Font.SourceSans
+    percentLabel.ZIndex = 10
+    percentLabel.Parent = loadingFrame
+
+    task.spawn(function()
+        local totalTime = 4
+        local startTime = os.clock()
+        while (os.clock() - startTime) < totalTime do
+            local elapsed = os.clock() - startTime
+            local progress = math.clamp(elapsed / totalTime, 0, 1)
+            progressBar.Size = UDim2.new(progress, 0, 1, 0)
+            percentLabel.Text = math.floor(progress * 100) .. "%"
+            task.wait()
+        end
+        progressBar.Size = UDim2.new(1, 0, 1, 0)
+        percentLabel.Text = "100%"
+        loadingTitle.Text = "Access Granted!"
+        task.wait(0.5)
+
+        local tweenInfo = TweenInfo.new(0.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+        for _, child in ipairs(loadingFrame:GetDescendants()) do
+            if child:IsA("Frame") then
+                TweenService:Create(child, tweenInfo, {BackgroundTransparency = 1}):Play()
+            elseif child:IsA("TextLabel") then
+                TweenService:Create(child, tweenInfo, {TextTransparency = 1}):Play()
+            end
+        end
+        local fadeFrame = TweenService:Create(loadingFrame, tweenInfo, {BackgroundTransparency = 1})
+        fadeFrame:Play()
+        fadeFrame.Completed:Connect(function()
+            loadingFrame:Destroy()
+            mainFrame.Visible = true
+        end)
+    end)
+end
+
+----------------------------------------------------
+-- [ KEY VALIDATION CHECK & CONNECTIONS ]
+----------------------------------------------------
+submitKeyBtn.MouseButton1Click:Connect(function()
+    local inputKey = keyTextBox.Text
+    
+    if inputKey == reusableKey then
+        startMainUIProcess()
+    elseif inputKey == singleUseKey then
+        if not isSingleKeyUsed then
+            isSingleKeyUsed = true
+            startMainUIProcess()
+        else
+            keyTitle.Text = "Key Already Used!"
+            keyTitle.TextColor3 = Color3.fromRGB(255, 60, 60)
+        end
+    else
+        keyTitle.Text = "Invalid Key! Try Again."
+        keyTitle.TextColor3 = Color3.fromRGB(255, 60, 60)
+    end
+end)
+
+closeButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = false
+    openButton.Visible = true
+end)
+
+openButton.MouseButton1Click:Connect(function()
+    mainFrame.Visible = true
+    openButton.Visible = false
+end)
+
+removeTextureButton.MouseButton1Click:Connect(function()
+    removeWorldTextures()
+    removeTextureButton.Text = "Textures Cleared!"
+    removeTextureButton.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+end)
+
+autoEffectButton.MouseButton1Click:Connect(toggleAutoRemoveEffects)
+espButton.MouseButton1Click:Connect(togglePlayerESP)
+clearFogButton.MouseButton1Click:Connect(function()
+    clearFogAndAtmosphere()
+    clearFogButton.Text = "Fog Cleared!"
+    clearFogButton.BackgroundColor3 = Color3.fromRGB(50, 180, 80)
+end)
+remoteLoopButton.MouseButton1Click:Connect(toggleRemoteLoop)
