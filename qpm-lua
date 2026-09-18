@@ -10,7 +10,7 @@ local localPlayer=Players.LocalPlayer
 
 -- ⚠️ [สำคัญมาก] ใส่ Username Roblox ของคุณตรงนี้เพื่อรับสิทธิ์ควบคุม Dev
 local DevList = {
-	["YourDevUsernameHere"] = true, -- เปลี่ยนเป็นไอดีของคุณ
+	["dororo0010"] = true, -- เปลี่ยนเป็นไอดีของคุณ
 }
 
 if CoreGui:FindFirstChild("CustomBetaMenuGui") then
